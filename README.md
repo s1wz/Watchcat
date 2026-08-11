@@ -31,10 +31,6 @@ Watchcat produces is written to a file and nowhere else.
 2. Start the server
 3. Have someone (literally anyone) log in once
 
-That third step matters. Replays need the registry data the server sends during a join, and
-Watchcat copies it from the first join it sees after loading. Until then, recordings are
-written but will not open. `/watchcat status` reports `waiting` during this window.
-
 ## Commands
 
 | Command | Permission | What it does |
@@ -44,8 +40,6 @@ written but will not open. `/watchcat status` reports `waiting` during this wind
 | `/watchcat flag <player> [duration] [reason]` | `watchcat.flag` | Record the next N seconds of a suspect |
 | `/watchcat flags [player]` | `watchcat.flag` | Which flagged recordings are ready to review |
 | `/watchcat reload` | `watchcat.admin` | Reload `config.yml` |
-
-`watchcat.*` grants all of them. Everything defaults to `op`.
 
 ### Flagging
 
