@@ -29,7 +29,7 @@ Watchcat produces is written to a file and nowhere else.
 
 1. Drop `Watchcat-<version>.jar` and ProtocolLib into `plugins/`
 2. Start the server
-3. Have someone — anyone — log in once
+3. Have someone (literally anyone) log in once
 
 That third step matters. Replays need the registry data the server sends during a join, and
 Watchcat copies it from the first join it sees after loading. Until then, recordings are
