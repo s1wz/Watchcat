@@ -1,0 +1,225 @@
+# =============================================================================
+#                         Watchcat Configuration
+# =============================================================================
+#
+# Watchcat records a player's connection to a .mcpr replay file that you open in
+# Minecraft with the ReplayMod client mod, so you can watch back exactly what a
+# suspected cheater did and judge it for yourself.
+#
+# It records passively. Nothing is ever sent to the player being recorded — no
+# extra packets, no messages, no visible change of any kind. They cannot tell.
+#
+# Watchcat does not detect cheating and does not punish anyone. Your anticheat
+# or x-ray plugin decides who is suspicious; Watchcat makes sure there is a
+# replay waiting when someone goes to check. See "Hooking up your anticheat"
+# near the bottom of this file.
+#
+# Requirements
+#   - ProtocolLib must be installed. Without it Watchcat still loads, but every
+#     recording feature is disabled and /watchcat status will say so.
+#   - At least one player must join AFTER Watchcat loads. Replays need the
+#     registry data the server sends during a join; Watchcat copies it from the
+#     first join it sees. Until then, recordings will not open in ReplayMod.
+#     After a restart, the first person to log in provides it.
+#
+# Where files go
+#   plugins/Watchcat/replays/<player-uuid>/  ordinary recordings
+#   plugins/Watchcat/replays/flagged/        recordings started by a flag
+#   plugins/Watchcat/replays/index.json      a list of everything recorded
+#
+# Getting started
+#   /watchcat status                 is it working, what is running, disk used
+#   /watchcat record <player> start  begin recording someone; 'stop' saves it
+#   /watchcat flag <player>          record the next 120 seconds of a suspect
+#   /watchcat flags                  which flagged recordings are ready to watch
+#
+# Run /watchcat reload after editing this file. Note that always-record and
+# recorded-packet-types only take effect for recordings started after the
+# reload — anything already running keeps the settings it started with.
+#
+# Watchcat never deletes anything unless you switch on auto-cleanup below.
+# =============================================================================
+
+
+# Record every player from the moment they join, continuously.
+#
+# This is the "catch it after the fact" mode: everyone is always being recorded
+# into a short rolling buffer (see buffer-minutes), so when someone reports a
+# cheater the last few minutes already exist. The cost is CPU and memory for
+# every online player, so on a busy server prefer leaving this off and using
+# /watchcat flag or an anticheat plugin to record only who you care about.
+#
+# Off by default.
+always-record: false
+
+
+# How many minutes of history the always-record buffer keeps per player.
+#
+# Older packets are dropped as new ones arrive, so memory stays bounded. Raise
+# it if reports reach you slowly; lower it if memory is tight. This has no
+# effect on flag recordings, which keep everything for their full duration.
+buffer-minutes: 5
+
+
+# How long a flag recording runs, in seconds, when no duration is given.
+#
+# Used by /watchcat flag <player> with no duration, and by anticheat plugins
+# calling the Watchcat API. A flag recording is forward-looking: it starts the
+# instant the flag is raised and captures what the player does NEXT. It is not
+# a dump of the buffer above, and it works whether or not always-record is on.
+#
+# Flagging the same player again while a recording is running resets its clock
+# rather than starting a second one, and both reasons end up in the filename.
+#
+# Allowed range is 1 to 3600 seconds; values outside it are clamped. Long
+# recordings are held in memory until they are written, and a very long one can
+# fill its packet buffer before its time is up — that replay is still saved, and
+# /watchcat flags marks it "truncated" so you know it ends early.
+default-flag-duration: 120
+
+
+# ---------------------------------------------------------------------------
+# Automatic cleanup
+#
+# Off by default: Watchcat keeps every replay forever until you turn this on.
+# Recordings are large — expect tens of megabytes per player-hour — so on a
+# server that records regularly you will want this enabled or you will fill the
+# disk. Deletion is permanent; there is no trash folder.
+#
+# When on, a sweep runs half-hourly in the background and deletes in two passes:
+#   1. anything older than retention-hours
+#   2. if still over max-storage-mb, the oldest replays until back under it,
+#      but never anything younger than min-retention-hours
+# Protected replays are skipped by both passes. /watchcat status shows the
+# current setting and how much disk is in use.
+# ---------------------------------------------------------------------------
+
+# Master switch for everything in this section.
+auto-cleanup: false
+
+
+# Delete replays older than this many hours.
+#
+# 36 keeps yesterday and this morning, which is usually enough for a report to
+# reach you and be reviewed. Raise it if your staff take longer to act. Set to 0
+# to disable the age rule entirely and rely only on the storage cap below.
+retention-hours: 36
+
+
+# Disk budget for stored replays, in megabytes.
+#
+# Once the total exceeds this, the oldest replays are deleted until it fits,
+# even if they are younger than retention-hours. Set to 0 to disable the cap and
+# rely only on the age rule. Reported by /watchcat status whether or not
+# auto-cleanup is on.
+max-storage-mb: 5000
+
+
+# Never delete a replay younger than this many hours, no matter how full the
+# disk is. This is a floor on the storage-pressure pass above: it stops a burst
+# of recordings from deleting the evidence you are about to look at. It does not
+# override retention-hours, which is a deliberate expiry rather than pressure.
+min-retention-hours: 12
+
+
+# Protect flagged recordings from cleanup, so evidence is never deleted on a
+# timer while the report is still open.
+#
+# When true, nothing in replays/flagged/ is ever removed automatically and you
+# prune it by hand once a case is closed. When false, flagged recordings age out
+# like any other. Recordings are also marked protected individually in
+# index.json, and that mark is always honoured.
+protect-flagged-replays: true
+
+
+# ---------------------------------------------------------------------------
+# Hooking up your anticheat / x-ray detector
+#
+# Watchcat detects nothing on its own, by design. It is the camera, not the
+# alarm. Detection belongs to the plugin you already trust for it — an x-ray
+# detector, a movement anticheat, a combat anticheat — and Watchcat's job is to
+# have a replay waiting by the time a human goes to look.
+#
+# Most detection plugins can run a console command on a detection. Point that at:
+#
+#     watchcat flag <player> [duration] [reason]
+#
+# for example, with whatever placeholder your plugin uses for the player name:
+#
+#     watchcat flag %player% 180 x-ray: 14 diamonds in 3 minutes
+#
+# The duration is optional and only read as one if it is a number, so
+# "watchcat flag %player% suspected x-ray" also works and uses
+# default-flag-duration. The reason is free text to the end of the line; it ends
+# up in the replay's filename and metadata, which is what your staff read first.
+#
+# Repeat detections are safe to send. Flagging a player who is already being
+# recorded resets the clock instead of starting a second recording, and the new
+# reason is added to the ones already noted — so a burst of detections produces
+# one replay covering the whole episode, named after all of them.
+#
+# Nothing is sent to the player, so a detector with false positives costs you
+# disk space, not a tipped-off cheater.
+#
+# Java plugins can skip the command and call the API directly, which also lets
+# them be notified when the finished replay is ready:
+#
+#     WatchcatAPI api = getServer().getServicesManager().load(WatchcatAPI.class);
+#     if (api != null) api.flagMoment(player, "x-ray: 14 diamonds in 3 minutes");
+#
+# See WatchcatAPI, FlagRecordingStartedEvent and FlagRecordingReadyEvent.
+# ---------------------------------------------------------------------------
+
+
+# Which packets get stored in replays.
+#
+# Only change this if a replay is missing something specific and you know which
+# packet carries it. Removing entries saves CPU and disk at the cost of replay
+# detail; adding unknown ones is harmless, they are logged and skipped at
+# startup. The packets a replay cannot open without are always recorded whether
+# or not they appear here, so a mistake here costs detail, not playability.
+#
+# These are ProtocolLib PacketType.Play.Server field names, which do not always
+# match the modern packet name — map_chunk is today's chunk-with-light packet.
+recorded-packet-types:
+  # world
+  - map_chunk
+  - light_update
+  - unload_chunk
+  - view_centre
+  - view_distance
+  - block_change
+  - multi_block_change
+  - block_action
+  - tile_entity_data
+  # camera and session state
+  - position
+  - game_state_change
+  - respawn
+  - abilities
+  - update_time
+  - update_health
+  - experience
+  - bundle
+  # entities
+  - spawn_entity
+  - entity_metadata
+  - entity_destroy
+  - entity_velocity
+  - rel_entity_move
+  - rel_entity_move_look
+  - entity_look
+  - entity_head_rotation
+  - entity_teleport
+  - entity_position_sync
+  - entity_equipment
+  - entity_effect
+  - update_attributes
+  - animation
+  # players
+  - player_info
+  - player_info_remove
+  # inventory
+  - set_slot
+  - window_items
+  - held_item_slot

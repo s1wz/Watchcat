@@ -1,0 +1,20 @@
+# Build output
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Maven wrapper (downloaded)
+.mvn/maven/
+
+# Local tooling config (contains machine-specific absolute paths)
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db

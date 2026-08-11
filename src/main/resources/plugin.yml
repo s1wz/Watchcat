@@ -1,0 +1,36 @@
+name: Watchcat
+version: '${project.version}'
+main: dev.watchcat.Watchcat
+api-version: '1.21'
+description: Packet-level replay recording and player analysis
+authors:
+  - sjwz
+softdepend:
+  - ProtocolLib
+
+commands:
+  watchcat:
+    description: Watchcat admin commands
+    usage: /<command> <status|reload|record|flag|flags>
+
+permissions:
+  watchcat.status:
+    description: /watchcat status — recording availability, active sessions, storage usage
+    default: op
+  watchcat.admin:
+    description: /watchcat reload — reload config.yml
+    default: op
+  watchcat.record:
+    description: /watchcat record <player> start|stop — manual recording sessions
+    default: op
+  watchcat.flag:
+    description: /watchcat flag and /watchcat flags — flag a player and review flagged recordings
+    default: op
+  watchcat.*:
+    description: Grants every Watchcat permission
+    default: op
+    children:
+      watchcat.status: true
+      watchcat.admin: true
+      watchcat.record: true
+      watchcat.flag: true
