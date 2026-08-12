@@ -97,6 +97,14 @@ public final class PacketCaptureManager {
         return backend != null && backend.getPrologueSource().hasConfigurationPrologue();
     }
 
+    public boolean hasLoginPrologue() {
+        return backend != null && backend.getPrologueSource().hasLoginPrologue();
+    }
+
+    public String getLoginPrologueFailure() {
+        return backend != null ? backend.getPrologueSource().getLoginPrologueFailure() : "unknown";
+    }
+
     public void shutdown() {
         if (backend == null) {
             return;

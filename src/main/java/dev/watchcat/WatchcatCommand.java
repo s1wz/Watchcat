@@ -171,6 +171,10 @@ public final class WatchcatCommand implements CommandExecutor, TabCompleter {
         if (!plugin.isRecordingAvailable()) {
             sender.sendMessage(MM.deserialize("<gray>  recording: <red>unavailable</red> "
                     + "<gray>— ProtocolLib is not installed or not enabled"));
+        } else if (!capture.hasLoginPrologue()) {
+            sender.sendMessage(MM.deserialize("<gray>  recording: <red>unusable</red> "
+                    + "<gray>— replays cannot open on this server version ("
+                    + escape(capture.getLoginPrologueFailure()) + ")"));
         } else if (!capture.hasConfigurationPrologue()) {
             sender.sendMessage(MM.deserialize("<gray>  recording: <yellow>waiting</yellow> "
                     + "<gray>— no player has joined since Watchcat loaded, so replays cannot open yet"));

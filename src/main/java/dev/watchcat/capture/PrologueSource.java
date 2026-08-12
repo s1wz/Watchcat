@@ -8,4 +8,8 @@ public interface PrologueSource {
     List<CapturedPacket> getPrologue(UUID playerUuid, String playerName);
 
     boolean hasConfigurationPrologue();
+
+    boolean hasLoginPrologue();
+
+    String getLoginPrologueFailure();
 }

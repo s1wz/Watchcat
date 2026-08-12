@@ -140,7 +140,8 @@ public class GlobalStateCache implements Listener, PrologueSource {
                 configurationPrologue = List.copyOf(pendingConfiguration);
                 pendingConfiguration.clear();
                 plugin.getLogger().info("Captured configuration prologue: "
-                        + configurationPrologue.size() + " packet(s). Replays are now openable.");
+                        + configurationPrologue.size() + " packet(s)."
+                        + (PrologueBuilder.isAvailable() ? " Replays are now openable." : ""));
             }
         }
     }
@@ -183,6 +184,10 @@ public class GlobalStateCache implements Listener, PrologueSource {
         CapturedPacket loginSuccess = PrologueBuilder.loginSuccess(playerUuid, playerName, now);
         if (loginSuccess != null) {
             prologue.add(loginSuccess);
+        } else {
+            plugin.getLogger().severe("No login prologue could be built ("
+                    + PrologueBuilder.getFailure() + ") — the replay of " + playerName
+                    + " will be saved but will NOT open in ReplayMod.");
         }
 
         List<CapturedPacket> configuration = configurationPrologue;
@@ -209,6 +214,16 @@ public class GlobalStateCache implements Listener, PrologueSource {
     @Override
     public boolean hasConfigurationPrologue() {
         return !configurationPrologue.isEmpty();
+    }
+
+    @Override
+    public boolean hasLoginPrologue() {
+        return PrologueBuilder.isAvailable();
+    }
+
+    @Override
+    public String getLoginPrologueFailure() {
+        return PrologueBuilder.getFailure();
     }
 
     @EventHandler

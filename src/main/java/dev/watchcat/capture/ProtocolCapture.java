@@ -54,6 +54,16 @@ public final class ProtocolCapture implements CaptureBackend {
         this.globalStateCache = new GlobalStateCache(plugin, ProtocolLibrary.getProtocolManager());
 
         registerListener();
+        checkLoginPrologue();
+    }
+
+    private void checkLoginPrologue() {
+        String failure = PrologueBuilder.selfTest();
+        if (failure != null) {
+            plugin.getLogger().severe("The login prologue cannot be built on this server version ("
+                    + failure + "). Recordings will still be saved, but they will not open in "
+                    + "ReplayMod. Please report this along with your server version.");
+        }
     }
 
     private void registerListener() {
